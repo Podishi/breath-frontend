@@ -1,0 +1,2064 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Дыхательные практики</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  html, body, #root { margin: 0; padding: 0; height: 100%; background: #091732; }
+  * { box-sizing: border-box; }
+  input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.6; }
+  input[type="range"] { -webkit-appearance: none; appearance: none; background: transparent; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 999px; background: rgba(255,255,255,0.18); }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #BFE3F5; margin-top: -8px; box-shadow: 0 0 0 4px rgba(191,227,245,0.18); cursor: pointer; }
+  input[type="range"]::-moz-range-track { height: 4px; border-radius: 999px; background: rgba(255,255,255,0.18); }
+  input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: none; border-radius: 50%; background: #BFE3F5; box-shadow: 0 0 0 4px rgba(191,227,245,0.18); cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/plain" id="app-source">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+// =====================================================================
+// НАСТРОЙКА: заполните перед развёртыванием
+// =====================================================================
+const API_BASE = "https://212.193.3.114:10287";
+const SHARE_URL = "https://t.me/easy_breathe_bot";
+const CONTACT_EMAIL = "breatheappy@gmail.com";
+
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+if (tg) {
+  tg.ready();
+  tg.expand();
+}
+const TG_INIT_DATA = tg ? tg.initData : "";
+
+// =====================================================================
+// Иконки
+// =====================================================================
+function Icon({ children, size = 16, strokeWidth = 1.6, color = "currentColor", style, fill = "none" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" style={style}>
+      {children}
+    </svg>
+  );
+}
+const IconX = (p) => <Icon {...p}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></Icon>;
+const IconChevronRight = (p) => <Icon {...p}><polyline points="9 18 15 12 9 6" /></Icon>;
+const IconChevronDown = (p) => <Icon {...p}><polyline points="6 9 12 15 18 9" /></Icon>;
+const IconVolume2 = (p) => <Icon {...p}><path d="M11 5 6 9H3v6h3l5 4V5z" /><path d="M15.5 8.5a5 5 0 010 7" /><path d="M18.5 6a9 9 0 010 12" /></Icon>;
+const IconVolumeX = (p) => <Icon {...p}><path d="M11 5 6 9H3v6h3l5 4V5z" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" /></Icon>;
+const IconVibrate = (p) => <Icon {...p}><rect x="8" y="2" width="8" height="20" rx="2" /><line x1="2" y1="8" x2="2" y2="16" /><line x1="22" y1="8" x2="22" y2="16" /></Icon>;
+const IconInfo = (p) => <Icon {...p}><circle cx="12" cy="12" r="9" /><line x1="12" y1="16" x2="12" y2="11.5" /><line x1="12" y1="8" x2="12.01" y2="8" /></Icon>;
+const IconBell = (p) => <Icon {...p}><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></Icon>;
+const IconCheck = (p) => <Icon {...p}><polyline points="20 6 9 17 4 12" /></Icon>;
+const IconCircleDot = (p) => <Icon {...p}><circle cx="12" cy="12" r="7.5" /><circle cx="12" cy="12" r="2" fill={p.color || "currentColor"} stroke="none" /></Icon>;
+const IconBarChart = (p) => <Icon {...p}><line x1="6" y1="20" x2="6" y2="12" /><line x1="12" y1="20" x2="12" y2="6" /><line x1="18" y1="20" x2="18" y2="14" /></Icon>;
+const IconSliders = (p) => <Icon {...p}><line x1="4" y1="6" x2="20" y2="6" /><circle cx="14" cy="6" r="2" fill="#091732" /><line x1="4" y1="12" x2="20" y2="12" /><circle cx="8" cy="12" r="2" fill="#091732" /><line x1="4" y1="18" x2="20" y2="18" /><circle cx="16" cy="18" r="2" fill="#091732" /></Icon>;
+const IconShare = (p) => <Icon {...p}><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.6" y1="10.5" x2="15.4" y2="6.5" /><line x1="8.6" y1="13.5" x2="15.4" y2="17.5" /></Icon>;
+const IconMail = (p) => <Icon {...p}><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M2 6l10 7 10-7" /></Icon>;
+const IconLock = (p) => <Icon {...p}><rect x="4" y="10" width="16" height="10" rx="2" /><path d="M7 10V7a5 5 0 0110 0v3" /></Icon>;
+const IconStar = (p) => <Icon {...p} fill={p.color || "currentColor"}><polygon points="12 2.5 14.6 8.7 21.3 9.3 16.2 13.7 17.7 20.3 12 16.8 6.3 20.3 7.8 13.7 2.7 9.3 9.4 8.7" /></Icon>;
+const IconCopy = (p) => <Icon {...p}><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 012-2h10" /></Icon>;
+const IconAlertTriangle = (p) => <Icon {...p}><path d="M12 3.5 2.5 20h19L12 3.5z" /><line x1="12" y1="10" x2="12" y2="14.5" /><line x1="12" y1="17.2" x2="12.01" y2="17.2" /></Icon>;
+const IconLockSmall = (p) => <Icon {...p}><rect x="5" y="10" width="14" height="9" rx="1.5" /><path d="M8 10V7a4 4 0 018 0v3" /></Icon>;
+
+// =====================================================================
+// Помощники
+// =====================================================================
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((resolve, reject) => {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+const PROGRESS_KEY = "breath_app_progress_v1";
+function loadProgressLog() {
+  try {
+    return JSON.parse(localStorage.getItem(PROGRESS_KEY)) || [];
+  } catch (e) {
+    return [];
+  }
+}
+function logSessionCompletion(techniqueId, durationSeconds) {
+  try {
+    const log = loadProgressLog();
+    log.push({ techniqueId, durationSeconds, at: new Date().toISOString() });
+    if (log.length > 1000) log.splice(0, log.length - 1000);
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(log));
+  } catch (e) {}
+}
+function computeProgressStats() {
+  const log = loadProgressLog();
+  const totalSeconds = log.reduce((s, e) => s + (e.durationSeconds || 0), 0);
+  const totalMinutes = Math.round(totalSeconds / 60);
+  const sessionsCount = log.length;
+  const counts = {};
+  log.forEach((e) => {
+    counts[e.techniqueId] = (counts[e.techniqueId] || 0) + 1;
+  });
+  let favoriteId = null;
+  let max = 0;
+  Object.entries(counts).forEach(([id, c]) => {
+    if (c > max) {
+      max = c;
+      favoriteId = id;
+    }
+  });
+  return { totalMinutes, sessionsCount, favoriteId };
+}
+function countTechniqueCompletions(techniqueId) {
+  return loadProgressLog().filter((e) => e.techniqueId === techniqueId).length;
+}
+
+// =====================================================================
+// TECHNIQUES CONFIG
+// =====================================================================
+
+const RATIO_OPTIONS = [
+  { id: "3-6", label: "3×6", inhale: 3, exhale: 6 },
+  { id: "4-8", label: "4×8", inhale: 4, exhale: 8 },
+  { id: "5-10", label: "5×10", inhale: 5, exhale: 10 },
+];
+const RATIO_NOTE = "Рекомендуем начинать с минимальной пропорции 3×6 и базовой длительности.";
+
+const DURATION_OPTIONS = [3, 5, 10, 15, 20];
+const DURATION_NOTE = "Рекомендуем начинать с базовой длительности.";
+
+const TECHNIQUES = [
+  // ---------------- ТРЕВОГА ----------------
+  {
+    id: "metronome",
+    category: "anxiety",
+    name: "Метроном",
+    subtitle: "Ровный ритм 60 BPM",
+    description: 
+      "Дыхание носом. Определите свой счет для дыхания и дышите в такт. Каждый удар метронома соответствует 1 секунде.",
+    duration: "3 минуты",
+    sessionSeconds: 180,
+    guided: false,
+    metronome: true,
+    premiumTimerExtension: true,
+    sliderTimer: true,
+    minMinutes: 3,
+    maxMinutes: 20,
+    phases: [
+      { name: "", seconds: 1, from: 0.78, to: 1.12 },
+      { name: "", seconds: 1, from: 1.12, to: 0.78 },
+    ],
+  },
+  {
+    id: "physio-sigh",
+    category: "anxiety",
+    premium: true,
+    name: "S.O.S. практика при ПА",
+    subtitle: "Практика на 3, 6 или 9 циклов",
+    description:  "Двойной вдох носом, за которым следует долгий выдох ртом (как будто дуете на свечу).",
+    mode: "cycles",
+    baseCycles: 3,
+    guided: true,
+    phases: [
+      { name: "Вдох", seconds: 2, from: 0.7, to: 1.0 },
+      { name: "Довдох", seconds: 1, from: 1.0, to: 1.28 },
+      { name: "Выдох", seconds: 6, from: 1.28, to: 0.7 },
+    ],
+  },
+  {
+    id: "observation",
+    category: "anxiety",
+    name: "Наблюдение за дыханием",
+    subtitle: "Простая практика заземления",
+    description:
+      "Дышите носом. Сосредоточьтесь на своём дыхании. Не направляйте дыхание, просто наблюдайте. Постарайтесь постепенно перевести дыхание из поверхностного в нижние рёбра и верх живота, не усиливая глубину вдохов и выдохов. Регулярная практика способствует осознанному дыханию и снижению тревоги и гормонов стресса.",
+    duration: "3 минуты",
+    sessionSeconds: 180,
+    guided: false,
+    premiumTimerExtension: true,
+    sliderTimer: true,
+    minMinutes: 3,
+    maxMinutes: 20,
+    phases: [
+      { name: "", seconds: 5, from: 0.78, to: 1.12 },
+      { name: "", seconds: 5, from: 1.12, to: 0.78 },
+    ],
+  },
+  {
+    id: "extended",
+    category: "anxiety",
+    name: "Расслабиться и отпустить тревогу",
+    subtitle: "3:6",
+    description: "Дыхание через нос. Каждый выдох вдвое длиннее вдоха.",
+    duration: "3 минуты",
+    sessionSeconds: 180,
+    guided: true,
+    premiumTimerExtension: true,
+    maxMinutes: 10,
+    phases: [
+      { name: "Вдох", seconds: 3, from: 0.7, to: 1.2 },
+      { name: "Выдох", seconds: 6, from: 1.2, to: 0.7 },
+    ],
+  },
+  {
+    id: "coherent",
+    category: "anxiety",
+    name: "Привести в баланс нервную систему",
+    subtitle: "5:5",
+    description: "Плавный вдох и выдох, без задержек. Дышите через нос.",
+    duration: "3 минуты",
+    sessionSeconds: 180,
+    guided: true,
+    premiumTimerExtension: true,
+    premiumCustomRatio: { options: RATIO_OPTIONS, note: RATIO_NOTE },
+    phases: [
+      { name: "Вдох", seconds: 5, from: 0.7, to: 1.28 },
+      { name: "Выдох", seconds: 5, from: 1.28, to: 0.7 },
+    ],
+  },
+  {
+    id: "stop-panic",
+    category: "anxiety",
+    premium: true,
+    name: "Стоп-паника",
+    subtitle: "Снижаем физиологические проявления панической атаки",
+    description:
+      "Практика для перестройки нервной системы. Дыхание через нос. Вдох на 4 счета, плавный выдох на 8 счетов. Предварительно освойте практику в спокойном состоянии, это необходимо, чтобы в момент паники вы уже знали нужный ритм. Медленный вдох носом и долгий, спокойный выдох помогают снизить физиологические проявления панической атаки.",
+    mode: "cycles",
+    baseCycles: 6,
+    guided: true,
+    phases: [
+      { name: "Вдох", seconds: 4, from: 0.7, to: 1.2 },
+      { name: "Выдох", seconds: 8, from: 1.2, to: 0.7 },
+    ],
+  },
+
+  // ---------------- ФОКУС ----------------
+  {
+    id: "square",
+    category: "focus",
+    name: "Сфокусироваться",
+    subtitle: "4:4:4:4",
+    description: "Дыхание через нос. Каждый этап дыхательного цикла соответствует 4 счетам: вдох, задержка, выдох, задержка.",
+    duration: "3 минуты",
+    sessionSeconds: 180,
+    guided: true,
+    premiumTimerExtension: true,
+    phases: [
+      { name: "Вдох", seconds: 4, from: 0.7, to: 1.28 },
+      { name: "Задержите", seconds: 4, from: 1.28, to: 1.28 },
+      { name: "Выдох", seconds: 4, from: 1.28, to: 0.7 },
+      { name: "Пауза", seconds: 4, from: 0.7, to: 0.7 },
+    ],
+  },
+  {
+    id: "bhramari",
+    category: "focus",
+    premium: true,
+    name: "Внутреннее спокойствие",
+    subtitle: "Практика гудящего звука",
+    description:
+      "Дыхание через нос. После вдоха выдох выполняется через нос с сомкнутыми губами (зубы разомкнуты) и длинным гудящим звуком «М-м-м-м», напоминающим жужжание пчелы. Фокус внимания — на вибрации, которая растекается по голове к точке между бровями.",
+    contraindication:
+      "Не выполняйте эту технику при гайморите, ушных инфекциях, сильной головной боли или повреждении барабанной перепонки.",
+    mode: "cycles",
+    baseCycles: 5,
+    unlockedCycles: 15,
+    unlockCyclesAt: 20,
+    cyclesNote: "Рекомендуем начинать с базового количества дыхательных циклов.",
+    guided: true,
+    phases: [
+      { name: "Вдох", seconds: 4, from: 0.7, to: 1.2 },
+      { name: "Жужжание", seconds: 6, from: 1.2, to: 0.7 },
+    ],
+  },
+  {
+    id: "alternate-nostril",
+    category: "focus",
+    premium: true,
+    name: "Ясность ума",
+    subtitle: "Приводит ум и тело в баланс",
+    description:
+      "Попеременное дыхание через нос. Следуя голосовым инструкциям по очереди закрывайте правую и левую ноздри, чередуя вдох и выдох. Это удобно делать большим и безымянным пальцами правой ладони. Не забудьте также включить звук для голосовых инструкций.",
+    mode: "cycles",
+    baseCycles: 6,
+    guided: true,
+    soundFile: "yasnost.mp3",
+    phases: [
+      { name: "Вдох", seconds: 4, from: 0.7, to: 1.2 },
+      { name: "Выдох", seconds: 4, from: 1.2, to: 0.7 },
+    ],
+  },
+  {
+    id: "before-speech",
+    category: "focus",
+    premium: true,
+    name: "Перед выступлением",
+    subtitle: "Снизить напряжение и волнение",
+    description:
+      "Дыхание с подъёмом рук и хлопком на выдохе со звуком «ХА!». Эту практику можно делать перед публичным выступлением, экзаменом и т.д. После нескольких циклов обычного дыхания на вдохе через нос поднимите руки через стороны вверх и на выдохе, слегка наклоняясь вперёд, бросьте руки через стороны, соединяя ладони с хлопком и одновременно произносите громко «ХА!». Затем вдохните, снова поднимая руки вверх, повторите тот же выдох с хлопком и звуком «ХА!». Завершите практику, подняв руки на вдохе и опустив их на выдохе. Убедитесь, что вам хватит места и вы никому не помешаете этой практикой.",
+    mode: "cycles",
+    baseCycles: 5,
+    guided: true,
+    phases: [
+      { name: "Вдох", seconds: 4, from: 0.7, to: 1.15 },
+      { name: "Выдох", seconds: 4, from: 1.15, to: 0.7 },
+      { name: "Вдох, руки вверх", seconds: 4, from: 0.7, to: 1.28 },
+      { name: "ХА! Хлопок", seconds: 4, from: 1.28, to: 0.7 },
+    ],
+  },
+
+  // ---------------- СОН ----------------
+  {
+    id: "478",
+    category: "sleep",
+    premium: true,
+    name: "Уснуть и расслабиться",
+    subtitle: "Снизить тревожность перед сном",
+    description: "Вдох на 4 счета, задержка на 7 счетов, длинный выдох на 8 счетов. Старайтесь дышать через нос. Выполните не более 4 циклов (1 цикл - вдох, задержка, выдох).",
+    mode: "cycles",
+    baseCycles: 4,
+    unlockCyclesAt: 20,
+    unlockedCycles: 6,
+    guided: true,
+    contraindication:
+      "Не более 4 циклов подряд для начинающих. Практику можно выполнять несколько раз в день, но не превышать установленное количество циклов, так как это может вызвать головокружение и помутнение сознания. При гипертонии и беременности предварительно проконсультируйтесь с врачом.",
+    phases: [
+      { name: "Вдох", seconds: 4, from: 0.7, to: 1.28 },
+      { name: "Задержите", seconds: 7, from: 1.28, to: 1.28 },
+      { name: "Выдох", seconds: 8, from: 1.28, to: 0.7 },
+    ],
+  },
+
+  // ---------------- CHECK-IN ----------------
+  {
+    id: "checkin",
+    type: "checkin",
+    name: "Заметить своё дыхание",
+    subtitle: "Короткая проверка-напоминание в течение дня",
+    duration: "1 минута",
+  },
+];
+
+const ANXIETY_TECHNIQUES = TECHNIQUES.filter((t) => t.category === "anxiety");
+const FOCUS_TECHNIQUES = TECHNIQUES.filter((t) => t.category === "focus");
+const SLEEP_TECHNIQUES = TECHNIQUES.filter((t) => t.category === "sleep");
+
+const BG = "#091732";
+const PANEL_BG = "#12233D";
+const GLOW_CORE = "#CDEBF7";
+const GLOW_MID = "#5F9FC9";
+const RING_TRACK = "rgba(255,255,255,0.16)";
+const RING_ACCENT = "#BFE3F5";
+const FONT = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+function makeStars(seed, count) {
+  let s = seed;
+  const rand = () => {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+  return Array.from({ length: count }).map(() => ({
+    x: rand() * 100,
+    y: rand() * 100,
+    size: rand() * 1.3 + 0.5,
+    opacity: rand() * 0.55 + 0.25,
+    twinkle: rand() * 3 + 2,
+  }));
+}
+function Starfield({ seed, count = 40 }) {
+  const stars = useMemo(() => makeStars(seed, count), [seed, count]);
+  return (
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+      {stars.map((s, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            left: `${s.x}%`,
+            top: `${s.y}%`,
+            width: s.size,
+            height: s.size,
+            borderRadius: "50%",
+            background: "#F2F7FB",
+            opacity: s.opacity,
+            animation: `twinkle ${s.twinkle}s ease-in-out infinite`,
+            animationDelay: `${(i % 7) * 0.4}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// =====================================================================
+// Общие UI-компоненты
+// =====================================================================
+const sectionTitleStyle = {
+  fontSize: 12,
+  fontWeight: 500,
+  letterSpacing: "0.05em",
+  textTransform: "uppercase",
+  color: "#BFE3F5",
+  opacity: 0.7,
+  marginBottom: 10,
+};
+
+function GlassPanel({ children, style }) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        maxWidth: 360,
+        borderRadius: 22,
+        border: "1px solid rgba(255,255,255,0.10)",
+        background: PANEL_BG,
+        backdropFilter: "blur(14px)",
+        padding: "22px 22px",
+        color: "#EAF2F8",
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function ToggleSwitch({ checked, onChange }) {
+  return (
+    <div
+      onClick={() => onChange(!checked)}
+      style={{
+        width: 38,
+        height: 22,
+        borderRadius: 999,
+        background: checked ? "rgba(191,227,245,0.5)" : "rgba(255,255,255,0.14)",
+        position: "relative",
+        cursor: "pointer",
+        transition: "background 0.25s ease",
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 2,
+          left: checked ? 18 : 2,
+          width: 18,
+          height: 18,
+          borderRadius: "50%",
+          background: "#EAF2F8",
+          transition: "left 0.25s ease",
+        }}
+      />
+    </div>
+  );
+}
+
+function ScreenTopBar({ title, onBack }) {
+  return (
+    <div style={{ position: "absolute", top: 22, left: 22, right: 22, display: "flex", alignItems: "center", gap: 14, zIndex: 2 }}>
+      {onBack && (
+        <button
+          aria-label="Назад"
+          onClick={onBack}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            border: "none",
+            background: "rgba(255,255,255,0.08)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "rgba(234,242,248,0.85)",
+            backdropFilter: "blur(6px)",
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          <IconX size={16} strokeWidth={1.6} />
+        </button>
+      )}
+      {title && <div style={{ fontSize: 15, fontWeight: 400, color: "#EAF2F8", opacity: 0.9 }}>{title}</div>}
+    </div>
+  );
+}
+
+// =====================================================================
+// Нижние вкладки
+// =====================================================================
+const TABS = [
+  { id: "practices", label: "Практики", icon: IconCircleDot },
+  { id: "progress", label: "Прогресс", icon: IconBarChart },
+  { id: "settings", label: "Настройки", icon: IconSliders },
+];
+
+function TabBar({ active, onChange }) {
+  return (
+    <div
+      style={{
+        flexShrink: 0,
+        display: "flex",
+        borderTop: "1px solid rgba(255,255,255,0.08)",
+        background: "rgba(9,23,50,0.92)",
+        backdropFilter: "blur(14px)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}
+    >
+      {TABS.map((t) => {
+        const isActive = active === t.id;
+        const Ico = t.icon;
+        return (
+          <button
+            key={t.id}
+            onClick={() => onChange(t.id)}
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 4,
+              padding: "12px 0 10px",
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              color: isActive ? "#EAF2F8" : "rgba(234,242,248,0.4)",
+            }}
+          >
+            <Ico size={19} strokeWidth={1.6} color={isActive ? "#BFE3F5" : "rgba(234,242,248,0.4)"} />
+            <span style={{ fontSize: 10.5, fontWeight: 400, letterSpacing: "0.02em" }}>{t.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// =====================================================================
+// Вкладка «Практики»
+// =====================================================================
+function PremiumTag() {
+  return (
+    <span style={{ fontSize: 9.5, fontWeight: 500, padding: "2px 7px", borderRadius: 999, background: "rgba(191,227,245,0.15)", color: "#BFE3F5", letterSpacing: "0.04em", marginLeft: 8 }}>
+      PREMIUM
+    </span>
+  );
+}
+
+function TechniqueCard({ t, i, onSelect }) {
+  const isCheckin = t.type === "checkin";
+  const isPremium = !!t.premium;
+  return (
+    <button
+      onClick={() => onSelect(t.id)}
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+        gap: 16,
+        padding: "16px 16px",
+        borderRadius: 18,
+        border: isCheckin ? "1px solid rgba(191,227,245,0.22)" : "1px solid rgba(255,255,255,0.08)",
+        background: isCheckin ? "rgba(18,35,61,0.85)" : PANEL_BG,
+        backdropFilter: "blur(6px)",
+        cursor: "pointer",
+        textAlign: "left",
+      }}
+    >
+      {!isCheckin && <Starfield seed={(i + 1) * 97} count={16} />}
+      <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.03)" }} />
+      {isCheckin && (
+        <div style={{ position: "relative", zIndex: 1, width: 34, height: 34, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(191,227,245,0.12)" }}>
+          <IconBell size={15} strokeWidth={1.6} color="#BFE3F5" />
+        </div>
+      )}
+      <div style={{ flex: 1, minWidth: 0, position: "relative", zIndex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 400, color: "#EAF2F8", marginBottom: 3, display: "flex", alignItems: "center", flexWrap: "wrap" }}>
+          {t.name}
+          {isPremium && <PremiumTag />}
+          {t.contraindication && <IconAlertTriangle size={13} strokeWidth={1.8} color="#E8B978" style={{ marginLeft: 8 }} />}
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 300, color: "#EAF2F8", opacity: 0.5, lineHeight: 1.4 }}>{t.subtitle}</div>
+        {t.duration && (
+          <div style={{ fontSize: 11, fontWeight: 300, color: "#BFE3F5", opacity: 0.55, marginTop: 6, letterSpacing: "0.04em" }}>{t.duration}</div>
+        )}
+      </div>
+      <IconChevronRight size={16} strokeWidth={1.6} color="rgba(234,242,248,0.4)" style={{ position: "relative", zIndex: 1 }} />
+    </button>
+  );
+}
+
+function TechniqueSection({ title, items, onSelect, seedOffset = 0 }) {
+  if (!items.length) return null;
+  return (
+    <>
+      <div style={sectionTitleStyle}>{title}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
+        {items.map((t, i) => (
+          <TechniqueCard key={t.id} t={t} i={i + seedOffset} onSelect={onSelect} />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function TechniqueSelect({ onSelect }) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        background: BG,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "40px 20px 28px",
+        fontFamily: FONT,
+        boxSizing: "border-box",
+        overflowY: "auto",
+        position: "relative",
+      }}
+    >
+      <div style={{ position: "relative", zIndex: 1, textAlign: "center", marginBottom: 26 }}>
+        <div style={{ fontSize: 20, fontWeight: 300, letterSpacing: "0.06em", color: "#EAF2F8", opacity: 0.95 }}>Выберите практику</div>
+      </div>
+
+      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 360 }}>
+        <TechniqueSection title="Тревога" items={ANXIETY_TECHNIQUES} onSelect={onSelect} seedOffset={0} />
+        <TechniqueSection title="Фокус" items={FOCUS_TECHNIQUES} onSelect={onSelect} seedOffset={50} />
+        <TechniqueSection title="Сон" items={SLEEP_TECHNIQUES} onSelect={onSelect} seedOffset={90} />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {TECHNIQUES.filter((t) => t.type === "checkin").map((t, i) => (
+            <TechniqueCard key={t.id} t={t} i={i + 120} onSelect={onSelect} />
+          ))}
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes twinkle { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.9; } }
+      `}</style>
+    </div>
+  );
+}
+
+// =====================================================================
+// Вкладка «Прогресс»
+// =====================================================================
+function ProgressTab() {
+  const [stats, setStats] = useState(() => computeProgressStats());
+
+  useEffect(() => {
+    setStats(computeProgressStats());
+  }, []);
+
+  const favoriteName = stats.favoriteId ? TECHNIQUES.find((t) => t.id === stats.favoriteId)?.name : null;
+
+  const Stat = ({ label, value }) => (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "14px 0", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+      <span style={{ fontSize: 13.5, fontWeight: 300, opacity: 0.75 }}>{label}</span>
+      <span style={{ fontSize: 15, fontWeight: 400 }}>{value}</span>
+    </div>
+  );
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        background: BG,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "40px 20px 28px",
+        fontFamily: FONT,
+        boxSizing: "border-box",
+        overflowY: "auto",
+      }}
+    >
+      <div style={{ textAlign: "center", marginBottom: 30 }}>
+        <div style={{ fontSize: 20, fontWeight: 300, letterSpacing: "0.06em", color: "#EAF2F8", opacity: 0.95 }}>Ваш прогресс</div>
+      </div>
+
+      <GlassPanel>
+        <Stat label="Общее время" value={`${stats.totalMinutes} мин`} />
+        <Stat label="Сеансов завершено" value={stats.sessionsCount} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "14px 0" }}>
+          <span style={{ fontSize: 13.5, fontWeight: 300, opacity: 0.75 }}>Ваша любимая практика</span>
+          <span style={{ fontSize: 14, fontWeight: 400, textAlign: "right", maxWidth: 180 }}>{favoriteName || "—"}</span>
+        </div>
+      </GlassPanel>
+
+      {stats.sessionsCount === 0 && (
+        <div style={{ marginTop: 18, fontSize: 12.5, fontWeight: 300, color: "#EAF2F8", opacity: 0.4, textAlign: "center", maxWidth: 300 }}>
+          Здесь появится статистика, когда вы завершите первую практику
+        </div>
+      )}
+    </div>
+  );
+}
+// =====================================================================
+// Настройки напоминаний
+// =====================================================================
+function useReminderSettings() {
+  const [settings, setSettings] = useState({
+    remindersEnabled: false,
+    frequency: "daily",
+    dailyTime: "12:00",
+    workEnabled: false,
+    personalEnabled: true,
+    autoplaySound: false,
+    autoplayVibration: false,
+    timezone: "Europe/Moscow", // дефолтное значение
+  });
+  const [saveState, setSaveState] = useState(null);
+
+  useEffect(() => {
+    if (!TG_INIT_DATA) return;
+    fetch(`${API_BASE}/api/settings?initData=${encodeURIComponent(TG_INIT_DATA)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        setSettings((prev) => ({
+          ...prev,
+          remindersEnabled: !!data.remindersEnabled,
+          frequency: data.frequency || prev.frequency,
+          dailyTime: data.dailyTime || prev.dailyTime,
+          workEnabled: !!data.workEnabled,
+          personalEnabled: data.personalEnabled !== undefined ? !!data.personalEnabled : prev.personalEnabled,
+          autoplaySound: !!data.autoplaySound,
+          autoplayVibration: !!data.autoplayVibration,
+          timezone: data.timezone || prev.timezone, //
+        }));
+         try {
+          localStorage.setItem("breath_app_autoplay", JSON.stringify({
+            autoplaySound: !!data.autoplaySound,
+            autoplayVibration: !!data.autoplayVibration,
+          }));
+        } catch (e) {}
+      })
+      .catch(() => {});
+  }, []);
+
+    // Автоматически определяем и сохраняем часовой пояс устройства
+  useEffect(() => {
+    const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    // Проверяем, что пояс определился и он не совпадает с тем, что уже сохранен
+    // settings.timezone берется из начального состояния или из данных сервера
+    if (deviceTimezone && settings.timezone !== deviceTimezone) {
+      save({ timezone: deviceTimezone });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Пустой массив означает: выполнить 1 раз при монтировании компонента
+
+  const save = (patch) => {
+    setSettings((prev) => ({ ...prev, ...patch }));
+     try {
+      localStorage.setItem("breath_app_autoplay", JSON.stringify({
+        autoplaySound: patch.autoplaySound !== undefined ? patch.autoplaySound : settings.autoplaySound,
+        autoplayVibration: patch.autoplayVibration !== undefined ? patch.autoplayVibration : settings.autoplayVibration,
+      }));
+    } catch (e) {}
+    if (!TG_INIT_DATA) return;
+    setSaveState("saving");
+    fetch(`${API_BASE}/api/settings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ initData: TG_INIT_DATA, ...patch }),
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error("bad response");
+        setSaveState("saved");
+        setTimeout(() => setSaveState(null), 1800);
+      })
+      .catch(() => {
+        setSaveState("error");
+        setTimeout(() => setSaveState(null), 2500);
+      });
+  };
+
+  return { settings, save, saveState };
+}
+
+function SaveIndicator({ saveState }) {
+  if (!saveState) return null;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 26,
+        right: 22,
+        zIndex: 2,
+        fontSize: 11.5,
+        fontWeight: 300,
+        padding: "6px 12px",
+        borderRadius: 999,
+        background: "rgba(255,255,255,0.10)",
+        color: saveState === "error" ? "#F3B8B8" : "#BFE3F5",
+        backdropFilter: "blur(6px)",
+      }}
+    >
+      {saveState === "saving" ? "Сохраняем…" : saveState === "saved" ? "Сохранено" : "Не удалось сохранить"}
+    </div>
+  );
+}
+
+const FREQUENCIES = [
+  { id: "hourly", label: "Каждый час" },
+  { id: "2h", label: "Раз в 2 часа" },
+  { id: "3h", label: "Раз в 3 часа" },
+  { id: "daily", label: "Один раз в день" },
+  { id: "random", label: "Случайно", hint: "не реже 3 раз в день и не чаще 1 раза в час" },
+];
+
+const FOCUS_MODES = [
+  { id: "work", label: "В рабочее время" },
+  { id: "personal", label: "В личное время" },
+];
+
+function FocusModeToggles({ settings, save }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {FOCUS_MODES.map((m) => {
+        const key = m.id === "work" ? "workEnabled" : "personalEnabled";
+        return (
+          <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 2px" }}>
+            <span style={{ fontSize: 13.5, fontWeight: 300, opacity: 0.85 }}>{m.label}</span>
+            <ToggleSwitch checked={!!settings[key]} onChange={(v) => save({ [key]: v })} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// =====================================================================
+// «Заметить своё дыхание» — check-in экран
+// =====================================================================
+function BreathCheckIn({ onExit }) {
+  const { settings, save, saveState } = useReminderSettings();
+
+  const selectFrequency = (id) => save({ frequency: id, remindersEnabled: true });
+
+  return (
+    <div style={{ width: "100%", height: "100vh", minHeight: 640, background: BG, position: "relative", overflow: "hidden", fontFamily: FONT }}>
+      <Starfield seed={419} count={120} />
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 30%, transparent 0%, rgba(0,0,0,0.25) 100%)", pointerEvents: "none" }} />
+
+      <ScreenTopBar onBack={onExit} />
+      <SaveIndicator saveState={saveState} />
+
+      <div style={{ position: "relative", zIndex: 1, height: "100%", overflowY: "auto", display: "flex", justifyContent: "center", padding: "84px 20px 40px", boxSizing: "border-box" }}>
+        <GlassPanel style={{ height: "fit-content" }}>
+          <div style={{ fontSize: 19, fontWeight: 300, letterSpacing: "0.04em", marginBottom: 4 }}>Как вы дышите сейчас?</div>
+          <div style={{ fontSize: 13, fontWeight: 300, lineHeight: 1.6, opacity: 0.7, marginBottom: 22 }}>
+            Отметьте про себя, какое сейчас ваше дыхание — прерывистое, поверхностное, мягкое, спокойное, беззвучное, шумное и т.д.
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 300, lineHeight: 1.6, opacity: 0.7, marginBottom: 26 }}>
+            Обратите внимание на состояние тела: напряжены ли мышцы лица, шеи? Подняты или расслаблены плечи?
+          </div>
+
+          <div style={{ height: 1, background: "rgba(255,255,255,0.08)", margin: "0 0 22px" }} />
+
+          <div style={sectionTitleStyle}>Периодичность напоминаний</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+            {FREQUENCIES.map((f) => {
+              const active = settings.remindersEnabled && settings.frequency === f.id;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => selectFrequency(f.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "11px 14px",
+                    borderRadius: 12,
+                    border: active ? "1px solid rgba(191,227,245,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                    background: active ? "rgba(191,227,245,0.10)" : "transparent",
+                    color: "#EAF2F8",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  <span>
+                    <span style={{ fontSize: 13.5, fontWeight: 400 }}>{f.label}</span>
+                    {f.hint && <span style={{ display: "block", fontSize: 11, opacity: 0.5, marginTop: 2 }}>{f.hint}</span>}
+                  </span>
+                  <div style={{ width: 18, height: 18, borderRadius: "50%", border: active ? "none" : "1px solid rgba(255,255,255,0.3)", background: active ? "#BFE3F5" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {active && <IconCheck size={12} strokeWidth={2.5} color="#091732" />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={sectionTitleStyle}>Учитывать режимы фокусировки</div>
+          <FocusModeToggles settings={settings} save={save} />
+          <div style={{ fontSize: 11, fontWeight: 300, opacity: 0.45, lineHeight: 1.5, marginTop: 12 }}>
+            Если оба режима выключены — напоминания приходить не будут.
+          </div>
+        </GlassPanel>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// Политика конфиденциальности
+// =====================================================================
+function PrivacyPolicyScreen({ onBack }) {
+  return (
+    <div style={{ width: "100%", height: "100%", background: BG, position: "relative", fontFamily: FONT, display: "flex", flexDirection: "column" }}>
+      <div style={{ position: "relative", padding: "20px 20px 14px", flexShrink: 0 }}>
+        <button
+          onClick={onBack}
+          style={{ width: 36, height: 36, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(234,242,248,0.85)", cursor: "pointer" }}
+        >
+          <IconX size={16} strokeWidth={1.6} />
+        </button>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 22px 32px", color: "#EAF2F8" }}>
+        <div style={{ fontSize: 19, fontWeight: 300, marginBottom: 18 }}>Политика конфиденциальности</div>
+        <div style={{ fontSize: 13, fontWeight: 300, lineHeight: 1.7, opacity: 0.75 }}>
+          <p><em>Действует с [укажите дату публикации]</em></p>
+
+          <p><strong>1. Какие данные мы собираем</strong><br />
+          При использовании приложения через Telegram мы получаем ваш Telegram ID, имя и username —
+          это нужно, чтобы отправлять вам напоминания в чат с ботом. Мы сохраняем выбранные вами
+          настройки напоминаний (периодичность, время, включённые режимы). Статистика практик
+          (общее время, число сеансов, любимая практика) хранится только локально на вашем устройстве
+          и не передаётся на сервер.</p>
+
+          <p><strong>2. Как мы используем данные</strong><br />
+          Данные используются исключительно для работы приложения: отправки напоминаний по
+          расписанию, которое вы задали, и сохранения ваших настроек между сеансами. Мы не
+          используем ваши данные для рекламы и не передаём их третьим лицам, кроме случаев,
+          прямо описанных в этой политике.</p>
+
+          <p><strong>3. Медицинский отказ от ответственности</strong><br />
+          Приложение предназначено для общего благополучия и не является медицинским устройством
+          или сервисом. Содержимое приложения не является медицинской консультацией, диагностикой
+          или лечением. Если вы испытываете тревогу, панические атаки или иные симптомы,
+          обратитесь к врачу или квалифицированному специалисту.</p>
+
+          <p><strong>4. Хранение данных</strong><br />
+          Данные о настройках хранятся на сервере приложения до тех пор, пока вы им пользуетесь,
+          либо до запроса на удаление. Статистика практик хранится локально на вашем устройстве и
+          удаляется при удалении приложения или очистке данных браузера/Telegram.</p>
+
+          <p><strong>5. Сторонние сервисы</strong><br />
+          Приложение работает поверх платформы Telegram. Обработка сообщений и уведомлений
+          также регулируется политикой конфиденциальности Telegram.</p>
+
+          <p><strong>6. Ваши права</strong><br />
+          Вы можете в любой момент отключить напоминания в настройках приложения. Чтобы запросить
+          удаление ваших данных с сервера, напишите нам на {CONTACT_EMAIL}.</p>
+
+          <p><strong>7. Дети</strong><br />
+          Приложение не предназначено для лиц младше 16 лет.</p>
+
+          <p><strong>8. Изменения политики</strong><br />
+          Мы можем время от времени обновлять эту политику. Актуальная версия всегда доступна
+          в разделе «Настройки» приложения.</p>
+
+          <p><strong>9. Контакты</strong><br />
+          По всем вопросам, связанным с обработкой данных, пишите на {CONTACT_EMAIL}.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsRow({ icon: Ico, label, onClick, trailing, sublabel }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "12px 2px",
+        border: "none",
+        background: "transparent",
+        cursor: onClick ? "pointer" : "default",
+        textAlign: "left",
+        color: "#EAF2F8",
+      }}
+    >
+      {Ico && <Ico size={16} strokeWidth={1.6} color="rgba(191,227,245,0.85)" />}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 300 }}>{label}</div>
+        {sublabel && <div style={{ fontSize: 11.5, opacity: 0.5, marginTop: 2 }}>{sublabel}</div>}
+      </div>
+      {trailing}
+    </button>
+  );
+}
+
+function SettingsTab() {
+  const { settings, save, saveState } = useReminderSettings();
+  const [contactOpen, setContactOpen] = useState(false);
+  const [copyState, setCopyState] = useState(null);
+  const [subView, setSubView] = useState(null);
+
+  const toggleReminders = (on) => {
+    if (on) save({ remindersEnabled: true, frequency: "daily" });
+    else save({ remindersEnabled: false });
+  };
+
+  const handleShare = () => {
+    const shareData = { title: "Дыхательные практики", text: "Практики дыхания для снижения тревожности", url: SHARE_URL };
+    if (navigator.share) {
+      navigator.share(shareData).catch(() => {});
+    } else {
+      copyToClipboard(SHARE_URL)
+        .then(() => {
+          setCopyState("link-copied");
+          setTimeout(() => setCopyState(null), 2000);
+        })
+        .catch(() => {});
+    }
+  };
+
+  const handleCopyEmail = () => {
+    copyToClipboard(CONTACT_EMAIL)
+      .then(() => {
+        setCopyState("email-copied");
+        setTimeout(() => setCopyState(null), 2000);
+      })
+      .catch(() => {
+        setCopyState("error");
+        setTimeout(() => setCopyState(null), 2000);
+      });
+  };
+
+  if (subView === "privacy") {
+    return <PrivacyPolicyScreen onBack={() => setSubView(null)} />;
+  }
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        background: BG,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "40px 20px 28px",
+        fontFamily: FONT,
+        boxSizing: "border-box",
+        overflowY: "auto",
+        position: "relative",
+      }}
+    >
+      {saveState && (
+        <div
+          style={{
+            position: "absolute",
+            top: 14,
+            right: 20,
+            fontSize: 11.5,
+            fontWeight: 300,
+            padding: "5px 12px",
+            borderRadius: 999,
+            background: "rgba(255,255,255,0.10)",
+            color: saveState === "error" ? "#F3B8B8" : "#BFE3F5",
+          }}
+        >
+          {saveState === "saving" ? "Сохраняем…" : saveState === "saved" ? "Сохранено" : "Ошибка"}
+        </div>
+      )}
+
+      <div style={{ textAlign: "center", marginBottom: 26 }}>
+        <div style={{ fontSize: 20, fontWeight: 300, letterSpacing: "0.06em", color: "#EAF2F8", opacity: 0.95 }}>Настройки</div>
+      </div>
+
+      <div style={{ width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", gap: 16 }}>
+        <GlassPanel style={{ padding: "16px 18px" }}>
+          <button
+            disabled
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              padding: "11px 0",
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.10)",
+              background: "rgba(255,255,255,0.04)",
+              color: "rgba(234,242,248,0.45)",
+              fontSize: 13.5,
+              fontWeight: 400,
+              cursor: "not-allowed",
+            }}
+          >
+            <IconStar size={14} strokeWidth={1.4} color="rgba(191,227,245,0.5)" />
+            Попробовать Premium
+            <span style={{ fontSize: 10.5, opacity: 0.7, marginLeft: 4, padding: "2px 7px", borderRadius: 999, background: "rgba(255,255,255,0.08)" }}>скоро</span>
+          </button>
+        </GlassPanel>
+
+        <GlassPanel>
+          <div style={sectionTitleStyle}>Здоровье</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0" }}>
+            <span style={{ fontSize: 13.5, fontWeight: 300 }}>Ежедневное напоминание</span>
+            <ToggleSwitch checked={settings.remindersEnabled} onChange={toggleReminders} />
+          </div>
+
+          {settings.remindersEnabled && (
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 13, fontWeight: 300, opacity: 0.8 }}>Время</span>
+                <input
+                  type="time"
+                  step="60"
+                  value={settings.dailyTime}
+                  onChange={(e) => save({ dailyTime: e.target.value })}
+                  style={{
+                    colorScheme: "dark",
+                    background: "rgba(255,255,255,0.08)",
+                    color: "#EAF2F8",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    borderRadius: 10,
+                    padding: "7px 10px",
+                    fontSize: 14,
+                    fontFamily: FONT,
+                  }}
+                />
+              </div>
+
+              <div>
+                <div style={{ fontSize: 11.5, fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase", opacity: 0.55, marginBottom: 8 }}>
+                  Учитывать режимы фокусировки
+                </div>
+                <FocusModeToggles settings={settings} save={save} />
+              </div>
+            </div>
+          )}
+        </GlassPanel>
+
+         <GlassPanel>
+          <div style={sectionTitleStyle}>Во время практик</div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0" }}>
+            <span style={{ fontSize: 13.5, fontWeight: 300 }}>Включать звук автоматически</span>
+            <ToggleSwitch
+              checked={settings.autoplaySound}
+              onChange={(v) => save({ autoplaySound: v })}
+            />
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", marginTop: 6 }}>
+            <span style={{ fontSize: 13.5, fontWeight: 300 }}>Включать вибрацию автоматически</span>
+            <ToggleSwitch
+              checked={settings.autoplayVibration}
+              onChange={(v) => save({ autoplayVibration: v })}
+            />
+          </div>
+
+          <div style={{ fontSize: 11, fontWeight: 300, opacity: 0.5, lineHeight: 1.5, marginTop: 12 }}>
+            Если выключено — звук и вибрация запускаются только по нажатию на иконки в верхней части экрана практики.
+          </div>
+        </GlassPanel>
+
+        <GlassPanel>
+          <div style={sectionTitleStyle}>О приложении</div>
+
+          <SettingsRow icon={IconShare} label="Поделиться приложением" onClick={handleShare} trailing={<IconChevronRight size={15} strokeWidth={1.6} color="rgba(234,242,248,0.35)" />} />
+          {copyState === "link-copied" && <div style={{ fontSize: 11, opacity: 0.5, marginLeft: 28, marginBottom: 4 }}>Ссылка скопирована</div>}
+
+          <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "4px 0" }} />
+
+          <SettingsRow
+            icon={IconMail}
+            label="Связаться с нами"
+            onClick={() => setContactOpen((v) => !v)}
+            trailing={<IconChevronDown size={15} strokeWidth={1.6} color="rgba(234,242,248,0.35)" style={{ transform: contactOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s ease" }} />}
+          />
+          {contactOpen && (
+            <div style={{ marginLeft: 28, marginBottom: 8, padding: "8px 0 4px" }}>
+              <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 10 }}>{CONTACT_EMAIL}</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  onClick={handleCopyEmail}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)", color: "#EAF2F8", fontSize: 12, cursor: "pointer" }}
+                >
+                  <IconCopy size={12} strokeWidth={1.6} />
+                  Скопировать email
+                </button>
+                <a
+                  href={`mailto:${CONTACT_EMAIL}`}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)", color: "#EAF2F8", fontSize: 12, textDecoration: "none" }}
+                >
+                  <IconMail size={12} strokeWidth={1.6} />
+                  Отправить письмо
+                </a>
+              </div>
+              {copyState === "email-copied" && <div style={{ fontSize: 11, opacity: 0.5, marginTop: 8 }}>Email скопирован</div>}
+            </div>
+          )}
+
+          <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "4px 0" }} />
+
+          <SettingsRow icon={IconLock} label="Политика конфиденциальности" onClick={() => setSubView("privacy")} trailing={<IconChevronRight size={15} strokeWidth={1.6} color="rgba(234,242,248,0.35)" />} />
+        </GlassPanel>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// Настройка практики перед стартом
+// =====================================================================
+function OptionPill({ label, active, locked, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={locked}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 5,
+        padding: "8px 14px",
+        borderRadius: 999,
+        border: active ? "1px solid rgba(191,227,245,0.45)" : "1px solid rgba(255,255,255,0.12)",
+        background: active ? "rgba(191,227,245,0.14)" : "rgba(255,255,255,0.04)",
+        color: locked ? "rgba(234,242,248,0.35)" : "#EAF2F8",
+        fontSize: 12.5,
+        fontWeight: 400,
+        cursor: locked ? "default" : "pointer",
+        opacity: locked ? 0.7 : 1,
+      }}
+    >
+      {locked && <IconLockSmall size={11} strokeWidth={1.8} color="rgba(234,242,248,0.5)" />}
+      {label}
+    </button>
+  );
+}
+
+function RangeSlider({ value, min, max, step = 1, onChange, suffix = "мин" }) {
+  return (
+    <div style={{ width: "100%" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+        <span style={{ fontSize: 12, fontWeight: 300, opacity: 0.6 }}>{min} {suffix}</span>
+        <span style={{ fontSize: 14, fontWeight: 500, color: "#BFE3F5" }}>{value} {suffix}</span>
+        <span style={{ fontSize: 12, fontWeight: 300, opacity: 0.6 }}>{max} {suffix}</span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        style={{ width: "100%" }}
+      />
+    </div>
+  );
+}
+
+function PracticeSetup({ technique, onBack, onStart }) {
+  const isCoherent = !!technique.premiumCustomRatio;
+  const isCycles = technique.mode === "cycles";
+  const isSlider = !!technique.sliderTimer;
+  const minMin = technique.minMinutes || 3;
+  const maxMin = technique.maxMinutes || (technique.premiumTimerExtension ? 20 : 3);
+
+  const [minutes, setMinutes] = useState(minMin);
+  const [ratioId, setRatioId] = useState(null);
+  const [cycles, setCycles] = useState(technique.baseCycles || 4);
+
+  const completions = isCycles ? countTechniqueCompletions(technique.id) : 0;
+  const unlockAt = technique.unlockCyclesAt || 20;
+  const canUnlockCycles = completions >= unlockAt;
+
+  const handleStart = () => {
+    let resolved = { ...technique };
+
+    if (technique.premiumTimerExtension) {
+      resolved.sessionSeconds = minutes * 60;
+      resolved.duration = `${minutes} мин`;
+    }
+
+    if (isCoherent && ratioId) {
+      const r = technique.premiumCustomRatio.options.find((x) => x.id === ratioId);
+      resolved.phases = [
+        { name: "Вдох", seconds: r.inhale, from: 0.7, to: 1.28 },
+        { name: "Выдох", seconds: r.exhale, from: 1.28, to: 0.7 },
+      ];
+      resolved.subtitle = `${r.label} — свой режим`;
+    }
+
+    if (isCycles) {
+      const cycleSeconds = technique.phases.reduce((s, p) => s + p.seconds, 0);
+      resolved.sessionSeconds = cycleSeconds * cycles;
+      resolved.displayMode = "cycles";
+      resolved.totalCycles = cycles;
+      resolved.duration = `${cycles} циклов`;
+    }
+
+    onStart(resolved);
+  };
+
+  return (
+    <div style={{ width: "100%", height: "100vh", minHeight: 640, background: BG, position: "relative", overflow: "hidden", fontFamily: FONT }}>
+      <Starfield seed={technique.id.length * 37 + 11} count={70} />
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 30%, transparent 0%, rgba(0,0,0,0.25) 100%)", pointerEvents: "none" }} />
+      <ScreenTopBar onBack={onBack} />
+
+      <div style={{ position: "relative", zIndex: 1, height: "100%", overflowY: "auto", display: "flex", justifyContent: "center", padding: "84px 20px 40px", boxSizing: "border-box" }}>
+        <GlassPanel style={{ height: "fit-content" }}>
+          <div style={{ fontSize: 19, fontWeight: 300, letterSpacing: "0.04em", marginBottom: 4, color: "#EAF2F8" }}>{technique.name}</div>
+          <div style={{ fontSize: 13, fontWeight: 300, lineHeight: 1.6, opacity: 0.6, color: "#EAF2F8", marginBottom: 16 }}>{technique.subtitle}</div>
+
+          {technique.description && (
+            <div style={{ fontSize: 13, fontWeight: 300, lineHeight: 1.65, color: "#EAF2F8", opacity: 0.78, marginBottom: 20 }}>
+              {technique.description}
+            </div>
+          )}
+
+          {technique.contraindication && (
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                padding: "12px 14px",
+                borderRadius: 14,
+                background: "rgba(232,185,120,0.10)",
+                border: "1px solid rgba(232,185,120,0.28)",
+                marginBottom: 22,
+              }}
+            >
+              <IconAlertTriangle size={16} strokeWidth={1.7} color="#E8B978" style={{ flexShrink: 0, marginTop: 1 }} />
+              <div style={{ fontSize: 12, fontWeight: 300, lineHeight: 1.55, color: "#F3E4CE" }}>{technique.contraindication}</div>
+            </div>
+          )}
+
+          {technique.premiumTimerExtension && (
+            <div style={{ marginBottom: 22 }}>
+              <div style={sectionTitleStyle}>Длительность</div>
+              {isSlider ? (
+                <>
+                  <RangeSlider value={minutes} min={minMin} max={maxMin} onChange={setMinutes} />
+                  <div style={{ fontSize: 11, fontWeight: 300, opacity: 0.5, color: "#EAF2F8", marginTop: 8, lineHeight: 1.5 }}>
+                    {DURATION_NOTE}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {DURATION_OPTIONS.filter((m) => m <= maxMin).map((m) => (
+                      <OptionPill key={m} label={`${m} мин`} active={minutes === m} onClick={() => setMinutes(m)} />
+                    ))}
+                  </div>
+                  {minutes > 3 && (
+                    <div style={{ fontSize: 11, fontWeight: 300, opacity: 0.5, color: "#EAF2F8", marginTop: 8, lineHeight: 1.5 }}>
+                      {DURATION_NOTE}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {isCoherent && (
+            <div style={{ marginBottom: 22 }}>
+              <div style={sectionTitleStyle}>Свой режим (Premium)</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <OptionPill label="5×5 (по умолчанию)" active={!ratioId} onClick={() => setRatioId(null)} />
+                {technique.premiumCustomRatio.options.map((r) => (
+                  <OptionPill key={r.id} label={r.label} active={ratioId === r.id} onClick={() => setRatioId(r.id)} />
+                ))}
+              </div>
+              {ratioId && (
+                <div style={{ fontSize: 11, fontWeight: 300, opacity: 0.5, color: "#EAF2F8", marginTop: 8, lineHeight: 1.5 }}>
+                  {technique.premiumCustomRatio.note}
+                </div>
+              )}
+            </div>
+          )}
+
+          {isCycles && technique.unlockCyclesAt && (
+            <div style={{ marginBottom: 22 }}>
+              <div style={sectionTitleStyle}>Число циклов</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <OptionPill
+                  label={`${technique.baseCycles} (для начинающих)`}
+                  active={cycles === technique.baseCycles}
+                  onClick={() => setCycles(technique.baseCycles)}
+                />
+                <OptionPill
+                  label={`${technique.unlockedCycles}`}
+                  active={cycles === technique.unlockedCycles}
+                  locked={!canUnlockCycles}
+                  onClick={() => canUnlockCycles && setCycles(technique.unlockedCycles)}
+                />
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 300, opacity: 0.5, color: "#EAF2F8", marginTop: 8, lineHeight: 1.5 }}>
+                {canUnlockCycles
+                  ? `Разблокировано — вы завершили эту практику ${completions} раз.`
+                  : `${technique.unlockedCycles} циклов откроются после ${unlockAt} завершённых практик «${technique.name}» (сейчас: ${completions}).`}
+              </div>
+              {technique.cyclesNote && (
+                <div style={{ fontSize: 11, fontWeight: 300, opacity: 0.5, color: "#EAF2F8", marginTop: 6, lineHeight: 1.5 }}>
+                  {technique.cyclesNote}
+                </div>
+              )}
+            </div>
+          )}
+
+          {isCycles && !technique.unlockCyclesAt && technique.baseCycles && (
+            <div style={{ marginBottom: 22 }}>
+              <div style={sectionTitleStyle}>Число циклов</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {[technique.baseCycles, technique.baseCycles + 3, technique.baseCycles + 6].map((c, idx) => (
+                  <OptionPill key={c} label={`${c}`} active={cycles === c} onClick={() => setCycles(c)} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={handleStart}
+            style={{
+              width: "100%",
+              padding: "13px 0",
+              borderRadius: 999,
+              border: "none",
+              background: "#BFE3F5",
+              color: "#091732",
+              fontSize: 14,
+              fontWeight: 500,
+              letterSpacing: "0.02em",
+              cursor: "pointer",
+              marginTop: 4,
+            }}
+          >
+            Начать
+          </button>
+        </GlassPanel>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// Экран дыхательной сессии
+// =====================================================================
+function getPhaseState(phases, elapsedInCycle) {
+  let acc = 0;
+  for (let i = 0; i < phases.length; i++) {
+    const p = phases[i];
+    if (elapsedInCycle < acc + p.seconds) {
+      const phaseElapsed = elapsedInCycle - acc;
+      const progress = clamp(phaseElapsed / p.seconds, 0, 1);
+      return { phase: p, progress };
+    }
+    acc += p.seconds;
+  }
+  const last = phases[phases.length - 1];
+  return { phase: last, progress: 1 };
+}
+
+function BreathingSession({ technique, onExit }) {
+  const { phases, sessionSeconds, guided } = technique;
+  const cycleSeconds = phases.reduce((s, p) => s + p.seconds, 0);
+
+  const [elapsed, setElapsed] = useState(0);
+  const [completed, setCompleted] = useState(false);
+  const [showChrome, setShowChrome] = useState(true);
+  const [showInfo, setShowInfo] = useState(false);
+  const [soundOn, setSoundOn] = useState(false);
+  const [vibrationOn, setVibrationOn] = useState(false);
+  const [preparing, setPreparing] = useState(true);
+
+  const metronomeEnabled = !!technique.metronome;
+  const metroAudioRef = useRef(null);
+  const [metroOn, setMetroOn] = useState(false);
+  const [beat, setBeat] = useState(0);
+  const beatTimerRef = useRef();
+
+  const rafRef = useRef();
+  const lastTsRef = useRef(null);
+  const idleTimerRef = useRef();
+  const soundOnRef = useRef(false);
+
+  const audioCtxRef = useRef(null);
+  const oscRef = useRef(null);
+  const gainRef = useRef(null);
+
+    const startAudio = () => {
+    try {
+      const file = technique.soundFile || "sound.mp3";
+      const audio = new Audio(file);
+      audio.loop = true;
+      audio.volume = 0.5;
+      const seekTo = () => {
+        try {
+          if (audio.duration && isFinite(audio.duration) && audio.duration > 0) {
+            const t = elapsed % audio.duration; // elapsed — текущее время практики
+            audio.currentTime = t;
+          }
+        } catch (e) {}
+      };
+
+    audio.addEventListener("loadedmetadata", seekTo);
+    if (audio.readyState >= 1) seekTo();
+
+    audio.play().catch(() => {});
+    audioCtxRef.current = audio;
+    } catch (e) {}
+  };
+
+  const stopAudio = () => {
+    try {
+      if (audioCtxRef.current && audioCtxRef.current.pause) {
+        audioCtxRef.current.pause();
+      }
+    } catch (e) {}
+    audioCtxRef.current = null;
+  };
+
+      const startMetronome = () => {
+    const audio = new Audio("metronome.mp3");
+    audio.volume = 0.8;
+    metroAudioRef.current = audio;
+    const play = () => { audio.currentTime = 0; audio.play().catch(() => {}); };
+    play();
+    beatTimerRef.current = setInterval(() => { play(); setBeat((b) => b + 1); }, 1000);
+  };
+
+  const stopMetronome = () => {
+    clearInterval(beatTimerRef.current);
+    beatTimerRef.current = null;
+    try { metroAudioRef.current && metroAudioRef.current.pause(); } catch (e) {}
+    metroAudioRef.current = null;
+  };
+
+    // Синхронизируем soundOnRef с актуальным значением soundOn,
+  // чтобы useEffect подготовки видел его без пересоздания таймера
+  useEffect(() => {
+    soundOnRef.current = soundOn;
+  }, [soundOn]);
+
+  // Сброс состояния при смене практики
+  useEffect(() => {
+    if (!preparing) return;
+
+    // Пока идёт подготовка — глушим любой звук, даже если пользователь
+    // нажал 🔊 или включил автозапуск до входа в практику.
+    stopAudio();
+    stopMetronome();
+
+    const t = setTimeout(() => {
+      setPreparing(false);
+      lastTsRef.current = null; // чтобы практика началась с 0, а не с задержкой
+
+      // Читаем настройку автозапуска звука
+      let autoplaySound = false;
+      try {
+        const raw = localStorage.getItem("breath_app_autoplay");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          autoplaySound = !!parsed.autoplaySound;
+        }
+      } catch (e) {}
+
+      // Если звук должен играть — включаем. Если пользователь нажал 🔊 во время
+      // подготовки, soundOn уже будет true (см. пункт 3), поэтому тоже включаем.
+      if (autoplaySound || soundOnRef.current) {
+        if (technique.metronome) startMetronome();
+        else startAudio();
+        setSoundOn(true);
+      }
+    }, 3000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preparing]);
+
+  useEffect(() => () => { stopAudio(); stopMetronome(); }, []);
+
+  useEffect(() => {
+    if (completed) {
+      logSessionCompletion(technique.id, sessionSeconds);
+      stopAudio();
+      stopMetronome();
+      setSoundOn(false);
+      setMetroOn(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completed]);
+
+  // Плавное затухание звука за 5–6 секунд до конца практики
+  useEffect(() => {
+    if (!audioCtxRef.current) return;
+    if (completed) return;
+
+    const FADE_DURATION = 5;
+    const BASE_VOLUME = 0.5;
+    const remaining = sessionSeconds - elapsed;
+
+    if (remaining <= FADE_DURATION) {
+      const k = Math.max(0, remaining / FADE_DURATION);
+      audioCtxRef.current.volume = BASE_VOLUME * k;
+    } else {
+      audioCtxRef.current.volume = BASE_VOLUME;
+    }
+  }, [elapsed, sessionSeconds, completed]);
+
+  useEffect(() => () => { stopAudio(); stopMetronome(); }, []);
+
+  useEffect(() => {
+    if (completed) {
+      logSessionCompletion(technique.id, sessionSeconds);
+      stopAudio();
+      stopMetronome();
+      setSoundOn(false);
+      setMetroOn(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completed]);
+
+    // Плавное затухание звука за 5–6 секунд до конца практики
+  useEffect(() => {
+    if (!audioCtxRef.current) return;
+    if (completed) return;
+
+    const FADE_DURATION = 5; // секунд
+    const BASE_VOLUME = 0.5;
+
+    const remaining = sessionSeconds - elapsed;
+
+    if (remaining <= FADE_DURATION) {
+      // линейно уменьшаем громкость от BASE_VOLUME до 0
+      const k = Math.max(0, remaining / FADE_DURATION); // 1 → 0
+      audioCtxRef.current.volume = BASE_VOLUME * k;
+    } else {
+      // за пределами зоны затухания держим базовую громкость
+      audioCtxRef.current.volume = BASE_VOLUME;
+    }
+  }, [elapsed, sessionSeconds, completed]);
+
+  const tick = useCallback(
+    (ts) => {
+        if (preparing) {
+        lastTsRef.current = ts; // обновляем метку, но ничего не считаем
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      if (lastTsRef.current == null) lastTsRef.current = ts;
+      const dt = (ts - lastTsRef.current) / 1000;
+      lastTsRef.current = ts;
+
+      setElapsed((prev) => {
+        if (completed) return prev;
+        const next = prev + dt;
+        if (next >= sessionSeconds) {
+          setCompleted(true);
+          return sessionSeconds;
+        }
+        return next;
+      });
+      rafRef.current = requestAnimationFrame(tick);
+    },
+    [completed, sessionSeconds, preparing]
+  );
+
+  useEffect(() => {
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [tick]);
+
+  const wake = () => {
+    setShowChrome(true);
+    clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => setShowChrome(false), 3200);
+  };
+  useEffect(() => {
+    wake();
+    return () => clearTimeout(idleTimerRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const sessionT = clamp(elapsed / sessionSeconds, 0, 1);
+  const elapsedInCycle = elapsed % cycleSeconds;
+  const { phase, progress } = getPhaseState(phases, elapsedInCycle);
+
+  const breathScale = completed
+    ? 1.65 + Math.sin(elapsed * 0.4) * 0.05
+    : metronomeEnabled
+      ? lerp(phase.from, phase.to, easeInOutSine(progress))
+      : lerp(phase.from, phase.to, easeInOutSine(progress));
+
+  const breathMin = Math.min(...phases.map((p) => Math.min(p.from, p.to)));
+  const breathMax = Math.max(...phases.map((p) => Math.max(p.from, p.to)));
+  const breathNorm = clamp((breathScale - breathMin) / (breathMax - breathMin || 1), 0, 1);
+
+
+  const prevPhaseRef = useRef(phase.name);
+  useEffect(() => {
+    if (prevPhaseRef.current !== phase.name) {
+      prevPhaseRef.current = phase.name;
+      if (guided && vibrationOn && typeof navigator !== "undefined" && navigator.vibrate && (phase.name === "Вдох" || phase.name === "Выдох")) {
+        navigator.vibrate(90);
+      }
+    }
+  }, [phase.name, vibrationOn, guided]);
+
+  const remainingDisplay = Math.max(0, sessionSeconds - 1 - Math.floor(elapsed));
+  const minutesLeft = Math.floor(remainingDisplay / 60);
+  const secondsLeft = remainingDisplay % 60;
+  const currentCycle = technique.displayMode === "cycles" ? Math.min(technique.totalCycles, Math.floor(elapsed / cycleSeconds) + 1) : null;
+
+  const R = 118;
+  const C = 2 * Math.PI * R;
+  const dash = C * (1 - sessionT);
+
+  const iconBtnStyle = (active) => ({
+    width: 38,
+    height: 38,
+    borderRadius: "50%",
+    border: "none",
+    background: active ? "rgba(255,255,255,0.20)" : "rgba(255,255,255,0.08)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: active ? "#F5FBFF" : "rgba(234,242,248,0.55)",
+    transition: "background 0.4s ease, color 0.4s ease",
+    backdropFilter: "blur(6px)",
+    cursor: "pointer",
+  });
+
+  return (
+    <div
+      onPointerMove={wake}
+      onClick={() => {
+        wake();
+        setShowInfo(false);
+      }}
+      style={{
+        width: "100%",
+        height: "100vh",
+        minHeight: 640,
+        background: BG,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
+        overflow: "hidden",
+        fontFamily: FONT,
+        userSelect: "none",
+      }}
+    >
+      <Starfield seed={technique.id.length * 251 + technique.sessionSeconds} count={110} />
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 42%, transparent 0%, rgba(0,0,0,0.22) 100%)", pointerEvents: "none" }} />
+
+      <div style={{ position: "absolute", top: 22, left: 22, right: 22, display: "flex", justifyContent: "space-between", alignItems: "center", opacity: showChrome ? 1 : 0, transition: "opacity 0.9s ease" }}>
+        <button
+          aria-label="Назад к практикам"
+          onClick={(e) => {
+            e.stopPropagation();
+            stopAudio();
+            stopMetronome();
+            onExit();
+          }}
+          style={iconBtnStyle(false)}
+        >
+          <IconX size={17} strokeWidth={1.6} />
+        </button>
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            aria-label="Звук"
+                        onClick={(e) => {
+              e.stopPropagation();
+              setSoundOn((prev) => {
+                const next = !prev;
+                if (preparing) {
+                  // во время подготовки только «взводим» флаг,
+                  // само аудио стартует через 3 секунды
+                  return next;
+                }
+                if (next) {
+                  if (metronomeEnabled) startMetronome();
+                  else startAudio();
+                } else {
+                  if (metronomeEnabled) stopMetronome();
+                  else stopAudio();
+                }
+                return next;
+              });
+            }}
+            style={iconBtnStyle(soundOn)}
+          >
+            {soundOn ? <IconVolume2 size={16} strokeWidth={1.6} /> : <IconVolumeX size={16} strokeWidth={1.6} />}
+          </button>
+          <button
+            aria-label="Вибрация"
+            onClick={(e) => {
+              e.stopPropagation();
+              setVibrationOn((v) => !v);
+            }}
+            style={{ ...iconBtnStyle(vibrationOn), position: "relative" }}
+          >
+            <IconVibrate size={16} strokeWidth={1.6} />
+            {!vibrationOn && (
+              <div style={{ position: "absolute", width: 26, height: 1.4, background: "rgba(234,242,248,0.75)", transform: "rotate(45deg)", borderRadius: 1 }} />
+            )}
+          </button>
+                  </div>
+      </div>
+
+      {showInfo && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: "absolute",
+            bottom: 172,
+            right: 22,
+            width: 250,
+            padding: "16px 18px",
+            borderRadius: 16,
+            border: "1px solid rgba(255,255,255,0.12)",
+            background: "rgba(9,23,50,0.92)",
+            backdropFilter: "blur(10px)",
+            color: "#EAF2F8",
+            zIndex: 2,
+            animation: "fadeIn 0.35s ease",
+          }}
+        >
+          {technique.contraindication && (
+            <div style={{ display: "flex", gap: 8, marginBottom: 12, paddingBottom: 12, borderBottom: "1px solid rgba(255,255,255,0.12)" }}>
+              <IconAlertTriangle size={14} strokeWidth={1.7} color="#E8B978" style={{ flexShrink: 0, marginTop: 1 }} />
+              <div style={{ fontSize: 12, fontWeight: 300, lineHeight: 1.55, color: "#F3E4CE" }}>{technique.contraindication}</div>
+            </div>
+          )}
+          <div style={{ fontSize: 13, fontWeight: 500, letterSpacing: "0.02em", marginBottom: 8, opacity: 0.95 }}>Когда остановить практику</div>
+          <div style={{ fontSize: 12.5, fontWeight: 300, lineHeight: 1.6, opacity: 0.75 }}>
+            Прекратите дышать по счёту и вернитесь к обычному дыханию, если почувствуете: головокружение, учащённое или неровное сердцебиение,
+            покалывание в пальцах или губах, нехватку воздуха, тревогу или слабость. Дышите комфортно — без усилия и задержки через силу.
+          </div>
+        </div>
+      )}
+
+      <button
+        aria-label="Когда остановить практику"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowInfo((v) => !v);
+        }}
+        style={{ ...iconBtnStyle(showInfo), position: "absolute", bottom: 122, right: 22, opacity: showChrome ? 1 : 0, transition: "opacity 0.9s ease, background 0.4s ease, color 0.4s ease" }}
+      >
+        <IconInfo size={16} strokeWidth={1.6} />
+      </button>
+
+      {!completed && (
+        <svg width={260} height={260} style={{ position: "absolute", transform: "rotate(-90deg)", opacity: showChrome ? 0.4 : 0.14, transition: "opacity 1.2s ease" }}>
+          <circle cx={130} cy={130} r={R} fill="none" stroke={RING_TRACK} strokeWidth={1} />
+          <circle cx={130} cy={130} r={R} fill="none" stroke={RING_ACCENT} strokeWidth={1} strokeDasharray={C} strokeDashoffset={dash} strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.3s linear" }} />
+        </svg>
+      )}
+
+      <div style={{ position: "relative", width: 260, height: 260, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div
+          style={{
+            position: "absolute",
+            width: lerp(200, 330, breathNorm),
+            height: lerp(200, 330, breathNorm),
+            borderRadius: "50%",
+            background: `radial-gradient(circle, ${GLOW_MID} 0%, transparent 55%)`,
+            opacity: 0.24,
+            filter: "blur(46px)",
+            transition: "width 0.12s linear, height 0.12s linear",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            width: lerp(120, 215, breathNorm),
+            height: lerp(120, 215, breathNorm),
+            borderRadius: "50%",
+            background: `radial-gradient(circle, ${GLOW_CORE} 0%, ${GLOW_MID} 40%, transparent 68%)`,
+            opacity: 0.4,
+            filter: "blur(30px)",
+            transition: "width 0.12s linear, height 0.12s linear",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            width: lerp(30, 54, breathNorm),
+            height: lerp(30, 54, breathNorm),
+            borderRadius: "50%",
+            background: `radial-gradient(circle, ${GLOW_CORE} 0%, ${GLOW_MID} 55%, transparent 85%)`,
+            boxShadow: `0 0 ${lerp(30, 54, breathNorm)}px ${lerp(10, 22, breathNorm)}px rgba(95,159,201,0.22)`,
+            filter: "blur(12px)",
+            transition: "width 0.12s linear, height 0.12s linear, box-shadow 0.12s linear",
+          }}
+        />
+      </div>
+
+      <div style={{ position: "absolute", bottom: "26%", textAlign: "center", color: "#EAF2F8" }}>
+        {!completed ? (
+          preparing ? (
+            <>
+              <div
+                key="prepare"
+                style={{ fontSize: 22, fontWeight: 300, letterSpacing: "0.14em", textTransform: "uppercase", opacity: 0.92, animation: "fadeIn 0.6s ease", minHeight: 28 }}
+              >
+                Приготовьтесь
+              </div>
+              <div style={{ marginTop: 10, fontSize: 13, fontWeight: 300, letterSpacing: "0.08em", opacity: 0.5 }}>
+                Практика начнётся через 3 секунды
+              </div>
+            </>
+          ) : (
+            <>
+              <div
+                key={guided ? phase.name : "observe"}
+                style={{ fontSize: 22, fontWeight: 300, letterSpacing: "0.14em", textTransform: "uppercase", opacity: 0.92, animation: "fadeIn 0.6s ease", minHeight: 28 }}
+              >
+                {guided ? phase.name : "Наблюдайте"}
+              </div>
+              <div style={{ marginTop: 10, fontSize: 13, fontWeight: 300, letterSpacing: "0.08em", opacity: 0.5 }}>
+                {technique.displayMode === "cycles" ? `Цикл ${currentCycle} из ${technique.totalCycles}` : `${minutesLeft}:${String(secondsLeft).padStart(2, "0")} осталось`}
+              </div>
+            </>
+          )
+        ) : (
+          <>
+            <div style={{ fontSize: 21, fontWeight: 300, letterSpacing: "0.08em", opacity: 0.95, animation: "fadeIn 1.8s ease" }}>Практика завершена</div>
+            <div style={{ marginTop: 10, fontSize: 13, fontWeight: 300, opacity: 0.55, letterSpacing: "0.04em" }}>
+              {technique.name} · {technique.duration}
+            </div>
+          </>
+        )}
+      </div>
+
+      {completed && (
+        <div style={{ position: "absolute", bottom: 40, display: "flex", gap: 12 }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setElapsed(0);
+              setCompleted(false);
+              lastTsRef.current = null;
+              if (metronomeEnabled && !metroOn) { startMetronome(); setMetroOn(true); }
+            }}
+            style={{
+              padding: "11px 26px",
+              borderRadius: 999,
+              border: "1px solid rgba(255,255,255,0.22)",
+              background: "rgba(255,255,255,0.10)",
+              backdropFilter: "blur(6px)",
+              color: "#EAF2F8",
+              fontSize: 13,
+              fontWeight: 400,
+              letterSpacing: "0.04em",
+              cursor: "pointer",
+            }}
+          >
+            Ещё раз
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              stopAudio();
+              stopMetronome();
+              onExit();
+            }}
+            style={{ padding: "11px 22px", borderRadius: 999, border: "1px solid transparent", background: "transparent", color: "rgba(234,242,248,0.6)", fontSize: 13, fontWeight: 300, letterSpacing: "0.02em", cursor: "pointer" }}
+          >
+            Другая практика
+          </button>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @media (prefers-reduced-motion: reduce) { * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
+      `}</style>
+    </div>
+  );
+}
+
+// =====================================================================
+// Корневой компонент
+// =====================================================================
+function BreathingApp() {
+  const [techniqueId, setTechniqueId] = useState(null);
+  const [resolvedTechnique, setResolvedTechnique] = useState(null);
+  const [mainView, setMainView] = useState("practices");
+  const technique = TECHNIQUES.find((t) => t.id === techniqueId);
+
+  const exitToPractices = () => {
+    setTechniqueId(null);
+    setResolvedTechnique(null);
+  };
+
+  if (technique) {
+    if (technique.type === "checkin") {
+      return <BreathCheckIn onExit={exitToPractices} />;
+    }
+    if (!resolvedTechnique) {
+      return <PracticeSetup technique={technique} onBack={exitToPractices} onStart={setResolvedTechnique} />;
+    }
+    return <BreathingSession technique={resolvedTechnique} onExit={exitToPractices} />;
+  }
+
+  return (
+    <div style={{ width: "100%", height: "100vh", minHeight: 640, display: "flex", flexDirection: "column", background: BG }}>
+      <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
+        {mainView === "practices" && <TechniqueSelect onSelect={setTechniqueId} />}
+        {mainView === "progress" && <ProgressTab />}
+        {mainView === "settings" && <SettingsTab />}
+      </div>
+      <TabBar active={mainView} onChange={setMainView} />
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<BreathingApp />);
+</script>
+<script>
+  var __src = document.getElementById('app-source').textContent;
+  var __out = Babel.transform(__src, { presets: [['react', { runtime: 'classic' }]] }).code;
+  var __s = document.createElement('script');
+  __s.text = __out;
+  document.body.appendChild(__s);
+</script>
+</body>
+</html>
