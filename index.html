@@ -172,7 +172,6 @@ const TECHNIQUES = [
   {
     id: "physio-sigh",
     category: "anxiety",
-    premium: true,
     name: "S.O.S. практика при ПА",
     subtitle: "Практика на 3, 6 или 9 циклов",
     description:  "Двойной вдох носом, за которым следует долгий выдох ртом (как будто дуете на свечу).",
@@ -239,7 +238,6 @@ const TECHNIQUES = [
   {
     id: "stop-panic",
     category: "anxiety",
-    premium: true,
     name: "Стоп-паника",
     subtitle: "Снижаем физиологические проявления панической атаки",
     description:
@@ -274,7 +272,6 @@ const TECHNIQUES = [
   {
     id: "bhramari",
     category: "focus",
-    premium: true,
     name: "Внутреннее спокойствие",
     subtitle: "Практика гудящего звука",
     description:
@@ -295,7 +292,6 @@ const TECHNIQUES = [
   {
     id: "alternate-nostril",
     category: "focus",
-    premium: true,
     name: "Ясность ума",
     subtitle: "Приводит ум и тело в баланс",
     description:
@@ -312,7 +308,6 @@ const TECHNIQUES = [
   {
     id: "before-speech",
     category: "focus",
-    premium: true,
     name: "Перед выступлением",
     subtitle: "Снизить напряжение и волнение",
     description:
@@ -332,7 +327,6 @@ const TECHNIQUES = [
   {
     id: "478",
     category: "sleep",
-    premium: true,
     name: "Уснуть и расслабиться",
     subtitle: "Снизить тревожность перед сном",
     description: "Вдох на 4 счета, задержка на 7 счетов, длинный выдох на 8 счетов. Старайтесь дышать через нос. Выполните не более 4 циклов (1 цикл - вдох, задержка, выдох).",
@@ -350,15 +344,7 @@ const TECHNIQUES = [
     ],
   },
 
-  // ---------------- CHECK-IN ----------------
-  {
-    id: "checkin",
-    type: "checkin",
-    name: "Заметить своё дыхание",
-    subtitle: "Короткая проверка-напоминание в течение дня",
-    duration: "1 минута",
-  },
-];
+  ];
 
 const ANXIETY_TECHNIQUES = TECHNIQUES.filter((t) => t.category === "anxiety");
 const FOCUS_TECHNIQUES = TECHNIQUES.filter((t) => t.category === "focus");
