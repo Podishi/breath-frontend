@@ -40,6 +40,15 @@
 <script type="text/plain" id="app-source">
 const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+// Отправка целей в Яндекс.Метрику
+const sendMetric = (goal, params = {}) => {
+  if (window.ym) {
+    window.ym(114239616, 'reachGoal', goal, params);
+  }
+};
+
 // =====================================================================
 // НАСТРОЙКА: заполните перед развёртыванием
 // =====================================================================
@@ -537,7 +546,10 @@ function TabBar({ active, onChange }) {
         return (
           <button
             key={t.id}
-            onClick={() => onChange(t.id)}
+            onClick={() => {
+           onChange(t.id);
+          sendMetric('tab_click', { tab: t.id });
+          }}
             style={{
               flex: 1,
               display: "flex",
@@ -1613,6 +1625,7 @@ function BreathingSession({ technique, onExit }) {
   useEffect(() => {
     if (completed) {
       logSessionCompletion(technique.id, sessionSeconds);
+      sendMetric('practice_complete', { technique_id: technique.id });
       stopAudio();
       stopMetronome();
       setSoundOn(false);
@@ -2033,9 +2046,18 @@ function BreathingApp() {
     if (technique.type === "checkin") {
       return <BreathCheckIn onExit={exitToPractices} />;
     }
-    if (!resolvedTechnique) {
-      return <PracticeSetup technique={technique} onBack={exitToPractices} onStart={setResolvedTechnique} />;
-    }
+   if (!resolvedTechnique) {
+  return (
+    <PracticeSetup 
+      technique={technique} 
+      onBack={exitToPractices} 
+      onStart={(resolved) => {
+        sendMetric('practice_start', { technique_id: technique.id });
+        setResolvedTechnique(resolved);
+      }} 
+    />
+  );
+   }
     return <BreathingSession technique={resolvedTechnique} onExit={exitToPractices} />;
   }
 
